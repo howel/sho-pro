@@ -4,120 +4,156 @@ namespace App\Filament\Resources;
 
 use Illuminate\Support\Str;
 use App\Filament\Resources\ProductResource\Pages;
-use App\Filament\Resources\ProductResource\RelationManagers;
 use App\Models\Product;
-use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
-use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Toggle;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\BulkActionGroup;
 
 class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
-
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';
+    protected static ?string $navigationLabel = 'Productos';
+    protected static ?string $modelLabel = 'Producto';
 
     public static function form(Form $form): Form
     {
         return $form
-        ->schema([
-            Forms\Components\Card::make()->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->live(onBlur: true)
-                    // Solo se ejecuta si estamos CREANDO, no editando
-                    ->afterStateUpdated(fn (string $operation, $state, Forms\Set $set) => 
-                        $operation === 'create' ? $set('slug', Str::slug($state)) : null),
+            ->schema([
+                Grid::make(3)->schema([
+                    Section::make('Información General')
+                        ->schema([
+                            TextInput::make('name')
+                                ->label('Nombre del Producto')
+                                ->required()
+                                ->live(onBlur: true)
+                                ->afterStateUpdated(fn (string $operation, $state, \Filament\Forms\Set $set) =>
+                                    $operation === 'create' ? $set('slug', Str::slug($state)) : null),
 
-                Forms\Components\TextInput::make('slug')
-                    ->label('URL Amigable (Slug)') // Cambia el nombre de la etiqueta
-                    ->disabled()
-                    ->dehydrated()
-                    ->required()
-                    ->unique(Product::class, 'slug', ignoreRecord: true),
+                            TextInput::make('slug')
+                                ->label('URL Amigable (Slug)')
+                                ->disabled()
+                                ->dehydrated()
+                                ->required()
+                                ->unique(Product::class, 'slug', ignoreRecord: true),
 
-                Forms\Components\RichEditor::make('description')
-                    ->columnSpanFull()
-                    ->lazy() // No envía datos hasta que hagas clic fuera o guardes
-                    ->dehydrated(true), // Asegura que los datos se guarden correctamente
+                            RichEditor::make('description')
+                                ->label('Descripción Detallada')
+                                ->columnSpanFull(),
 
-                Forms\Components\Select::make('category_id')
-                ->label('Categoría')
-                ->relationship('category', 'name') // Esto buscará automáticamente las categorías que crees
-                ->searchable()
-                ->preload()
-                ->required(),
+                            Select::make('category_id')
+                                ->label('Categoría')
+                                ->relationship('category', 'name')
+                                ->searchable()
+                                ->preload()
+                                ->required(),
+                        ])->columnSpan(2),
 
-                Forms\Components\Grid::make(2)->schema([
-                    Forms\Components\TextInput::make('price')
-                        ->numeric()
-                        ->prefix('S/')
-                        ->required(),
-                    Forms\Components\TextInput::make('sale_price')
-                        ->numeric()
-                        ->prefix('S/'),
-                ]),
+                    Section::make('Inventario y Estado')
+                        ->schema([
+                            TextInput::make('price')
+                                ->label('Precio Normal')
+                                ->numeric()
+                                ->prefix('S/')
+                                ->required(),
 
-                Forms\Components\TextInput::make('stock')
-                    ->numeric()
-                    ->default(0)
-                    ->required(),
+                            TextInput::make('sale_price')
+                                ->label('Precio Oferta')
+                                ->numeric()
+                                ->prefix('S/'),
 
-                Forms\Components\FileUpload::make('image')
-                    ->label('Imagen del Producto')
-                    ->image() // Valida que sea imagen
-                    ->live(false) // <--- CRÍTICO: Evita que la subida de imagen refresque todo el formulario
-                    ->maxSize(2048), // Limita a 2MB para que no pese la carga
-                    /*->directory('products') // Carpeta donde se guarda
-                    ->visibility('public') // Asegura que sea visible
-                    ->preserveFilenames() // Opcional: mantiene el nombre original
-                    ->imageEditor() // Opcional: permite recortar la imagen
-                    ->downloadable() // Permite descargarla desde el panel
-                    ->openable() // Permite verla en grande
-                    ->required(fn (string $operation): bool => $operation === 'create'),*/ // Solo obligatoria al crear
+                            TextInput::make('stock')
+                                ->label('Stock Disponible')
+                                ->numeric()
+                                ->default(0)
+                                ->required(),
 
-                Forms\Components\Toggle::make('is_active')
-                    ->default(true),
-                
-                Forms\Components\Toggle::make('is_featured'),
-            ])
-        ]);
+                            Toggle::make('is_active')
+                                ->label('¿Producto Activo?')
+                                ->default(true),
+
+                            Toggle::make('is_featured')
+                                ->label('¿Destacar en Inicio?'),
+                        ])->columnSpan(1),
+
+                    Section::make('Multimedia (Fotos)')
+                        ->schema([
+                            FileUpload::make('image')
+                                ->label('Imagen de Portada (Principal)')
+                                ->image()
+                                ->directory('products')
+                                ->imageEditor()
+                                ->required(),
+
+                            FileUpload::make('images')
+                                ->label('Galería Adicional')
+                                ->image()
+                                ->directory('products-gallery')
+                                ->multiple() // Activa selección múltiple
+                                ->reorderable() // Permite arrastrar para ordenar
+                                ->appendFiles()
+                                ->maxFiles(5)
+                                ->columnSpanFull(),
+                        ])->columnSpanFull(),
+                ])
+            ]);
     }
 
-    public static function table(Tables\Table $table): Tables\Table
+    public static function table(Table $table): Table
     {
         return $table
-        ->columns([
-            Tables\Columns\ImageColumn::make('image'),
-            Tables\Columns\TextColumn::make('name')->searchable(),
-            Tables\Columns\TextColumn::make('price')->money('usd')->sortable(),
-            Tables\Columns\TextColumn::make('stock')->sortable(),
-            Tables\Columns\IconColumn::make('is_active')->boolean(),
-        ])
-        ->filters([
-            // Aquí podremos añadir filtros por categoría luego
-        ])
-        ->actions([
-            // ESTA ES LA LÍNEA QUE NECESITAS:
-            Tables\Actions\EditAction::make(),
-        ])
-        ->bulkActions([
-            Tables\Actions\BulkActionGroup::make([
-                Tables\Actions\DeleteBulkAction::make(),
-            ]),
-        ]);
+            ->columns([
+                ImageColumn::make('image')
+                    ->label('Foto')
+                    ->circular(),
+                
+                TextColumn::make('name')
+                    ->label('Nombre')
+                    ->searchable()
+                    ->sortable(),
 
+                TextColumn::make('price')
+                    ->label('Precio')
+                    ->money('PEN')
+                    ->sortable(),
 
-    }
+                TextColumn::make('stock')
+                    ->label('Stock')
+                    ->badge()
+                    ->color(fn ($state) => $state <= 5 ? 'danger' : 'success')
+                    ->sortable(),
 
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
+                IconColumn::make('is_active')
+                    ->label('Activo')
+                    ->boolean(),
+            ])
+            ->filters([
+                SelectFilter::make('category_id')
+                    ->relationship('category', 'name')
+                    ->label('Categoría'),
+            ])
+            ->actions([
+                EditAction::make(),
+            ])
+            ->bulkActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ]);
     }
 
     public static function getPages(): array
@@ -128,4 +164,10 @@ class ProductResource extends Resource
             'edit' => Pages\EditProduct::route('/{record}/edit'),
         ];
     }
+
+    // --- PERMISOS ABIERTOS ---
+    public static function canViewAny(): bool { return true; }
+    public static function canCreate(): bool { return true; }
+    public static function canEdit($record): bool { return true; }
+    public static function canDelete($record): bool { return true; }
 }

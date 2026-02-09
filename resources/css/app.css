@@ -9,3 +9,26 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* Estilos personalizados para el Slider de la Tienda */
+.swiper-pagination-bullet {
+    width: 12px !important;
+    height: 12px !important;
+    background: white !important;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+}
+
+.swiper-pagination-bullet-active {
+    background: #EA1B09 !important;
+    width: 30px !important; /* El punto activo se alarga (efecto moderno) */
+    border-radius: 6px !important;
+    opacity: 1;
+}
+
+/* Sombra para que las flechas se vean sobre cualquier imagen */
+.swiper-button-next::after, .swiper-button-prev::after {
+    font-size: 24px !important;
+    font-weight: bold;
+    text-shadow: 0px 0px 10px rgba(0,0,0,0.8);
+}

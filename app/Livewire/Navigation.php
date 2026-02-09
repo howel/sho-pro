@@ -2,21 +2,31 @@
 
 namespace App\Livewire;
 
-use App\Models\Category;
 use Livewire\Component;
+use Livewire\Attributes\On;
+use App\Helpers\CartManagement;
+use App\Models\Category; 
 
 class Navigation extends Component
 {
-    // Cambiamos 'cartUpdated' por 'item-added-to-cart'
-    protected $listeners = ['item-added-to-cart' => '$refresh']; 
-    
+    public $total_count = 0;
+
+    public function mount()
+    {
+        $this->total_count = count(CartManagement::getCartItemsFromCookie());
+    }
+
+    // Este es el nombre de evento que usabas originalmente
+    #[On('update-cart-count')]
+    public function updateCartCount($total_count)
+    {
+        $this->total_count = $total_count;
+    }
+
     public function render()
     {
         return view('livewire.navigation', [
-            // Mantenemos tus categorías
-            'categories' => Category::where('is_visible', true)->get(),
-            // Mantenemos el conteo
-            'cartCount' => \Cart::getContent()->count() 
+            'categories' => Category::all() 
         ]);
     }
 }

@@ -1,108 +1,68 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-        <script src="https://cdn.tailwindcss.com"></script>
+        
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{ $title ?? 'Importaciones Salazar' }}</title>
+        
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script src="https://cdn.tailwindcss.com"></script>
 
-        <title>{{ $title ?? 'Page Title' }}</title>
+        {{-- Slider home inicio --}}
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+        <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+        <style>
+            @keyframes custom-bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+            .animate-whatsapp { animation: custom-bounce 2s infinite; }
+            @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); } 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); } }
+            .animate-pulse-green { animation: pulse-green 2s infinite; }
+            #whatsapp-menu { display: none; }
+            #whatsapp-menu.active { display: block; animation: fadeIn 0.3s ease; }
+            @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        </style>
+        @livewireStyles
+        
     </head>
     <body class="bg-gray-100 font-sans antialiased">
+        
         @livewire('navigation')
 
-        <main>
+        <main class="min-h-screen">
             {{ $slot }}
         </main>
 
-        <!-- footer -->
-
-
         @livewire('footer')
         
-        @livewireScripts
-
-        <style>
-
-            /* Animación para whatsapp */
-
-            @keyframes custom-bounce {
-                0%, 100% { transform: scale(1); }
-                50% { transform: scale(1.1); }
-            }
-            .animate-whatsapp {
-                animation: custom-bounce 2s infinite;
-            }
-            
-            @keyframes pulse-green {
-                0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); }
-                70% { box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); }
-                100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
-            }
-            .animate-pulse-green { animation: pulse-green 2s infinite; }
-            
-            /* Ocultar menú por defecto */
-            #whatsapp-menu { display: none; }
-            #whatsapp-menu.active { display: block; animation: fadeIn 0.3s ease; }
-
-            @keyframes fadeIn {
-                from { opacity: 0; transform: translateY(10px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
-
-            /* Animación para el número del carrito */
-            @keyframes bounce-short {
-                0%, 100% { transform: scale(1) translate(25%, -25%); }
-                50% { transform: scale(1.4) translate(25%, -25%); }
-            }
-
-            .animate-bounce-short {
-                animation: bounce-short 0.5s ease-in-out;
-            }
-        </style>
-
+        {{-- Botón de WhatsApp flotante --}}
         <div class="fixed bottom-6 right-6 z-50">
             <div id="whatsapp-menu" class="mb-4 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden w-72">
                 <div class="bg-[#25D366] p-4 text-white text-center">
                     <p class="font-bold">¿Cómo podemos ayudarte? 👋</p>
                     <p class="text-xs opacity-90">Selecciona la sede más cercana</p>
                 </div>
-                
                 <div class="p-2 space-y-1">
+                    {{-- Sede Nueva Cajamarca --}}
                     <div class="p-2 border-b border-gray-50">
                         <p class="text-[10px] uppercase font-bold text-gray-400 px-2">Sede Nueva Cajamarca</p>
                         <a href="#" class="wa-link flex items-center gap-3 p-2 hover:bg-green-50 rounded-lg transition" data-tel="51969979954">
-                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold">V1</div>
+                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold text-xs">V1</div>
                             <div>
-                                <p class="text-sm font-bold text-gray-700">Asesor(a) Doris Santa Cruz</p>
-                                <p class="text-[11px] text-gray-500">Venta de Motos</p>
-                            </div>
-                        </a>
-
-                        <a href="#" class="wa-link flex items-center gap-3 p-2 hover:bg-green-50 rounded-lg transition" data-tel="51969979954">
-                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold">V2</div>
-                            <div>
-                                <p class="text-sm font-bold text-gray-700">Asesor(a) Mirian</p>
-                                <p class="text-[11px] text-gray-500">Venta de Repuestos</p>
+                                <p class="text-sm font-bold text-gray-700">Doris Santa Cruz</p>
+                                <p class="text-[11px] text-gray-500">Ventas</p>
                             </div>
                         </a>
                     </div>
-
+                    {{-- Sede Moyobamba --}}
                     <div class="p-2">
                         <p class="text-[10px] uppercase font-bold text-gray-400 px-2">Sede Moyobamba</p>
                         <a href="#" class="wa-link flex items-center gap-3 p-2 hover:bg-green-50 rounded-lg transition" data-tel="51969979954">
-                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold">V3</div>
+                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold text-xs">V2</div>
                             <div>
-                                <p class="text-sm font-bold text-gray-700">Asesor(a) Angel</p>
-                                <p class="text-[11px] text-gray-500">Venta de Motos</p>
-                            </div>
-                        </a>
-
-                        <a href="#" class="wa-link flex items-center gap-3 p-2 hover:bg-green-50 rounded-lg transition" data-tel="51969979954">
-                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold">R1</div>
-                            <div>
-                                <p class="text-sm font-bold text-gray-700">Asesor(a)Veronica</p>
-                                <p class="text-[11px] text-gray-500">Venta de Repuestos</p>
+                                <p class="text-sm font-bold text-gray-700">Asesor Angel</p>
+                                <p class="text-[11px] text-gray-500">Motos y Repuestos</p>
                             </div>
                         </a>
                     </div>
@@ -116,40 +76,23 @@
             </button>
         </div>
 
+        @livewireScripts
         <script>
             function toggleWaMenu() {
                 const menu = document.getElementById('whatsapp-menu');
                 menu.classList.toggle('active');
             }
-
+            
             document.addEventListener('DOMContentLoaded', function() {
-                const currentUrl = window.location.href;
-                const pageTitle = document.title;
                 const links = document.querySelectorAll('.wa-link');
-
                 links.forEach(link => {
                     const tel = link.getAttribute('data-tel');
                     const vendedor = link.querySelector('p.text-sm').innerText;
-                    
-                    // Mensaje que incluye Sede/Vendedor y la URL actual
-                    const mensaje = `Hola ${vendedor}! 👋 Estoy interesado en este producto de la tienda SHOPPRO: ${pageTitle}\nLink: ${currentUrl}`;
-                    
+                    const mensaje = `Hola ${vendedor}! 👋 Vengo de la web, deseo información.`;
                     link.href = `https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`;
                     link.target = "_blank";
                 });
             });
-
-            // Cerrar menú si se hace clic fuera
-            document.addEventListener('click', function(event) {
-                const isClickInside = document.getElementById('whatsapp-menu').contains(event.target) || 
-                                     event.target.closest('button');
-                if (!isClickInside) {
-                    document.getElementById('whatsapp-menu').classList.remove('active');
-                }
-            });
-
-
         </script>
     </body>
-
 </html>

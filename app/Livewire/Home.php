@@ -2,42 +2,60 @@
 
 namespace App\Livewire;
 
-use App\Models\Product; 
+use App\Models\Product;
+use App\Models\Category;
+use App\Models\Banner;
+use App\Helpers\CartManagement; // Importamos tu Helper
 use Livewire\Component;
-// Importamos la librería del carrito
-use Jantinnerezo\LivewireAlert\LivewireAlert; // Opcional si usas alertas
 
 class Home extends Component
 {
-    //use LivewireAlert; // Opcional
+    public $selectedCategory = null;
 
-    // FUNCIÓN PARA AÑADIR AL CARRITO
+    public function selectCategory($id = null)
+    {
+        $this->selectedCategory = $id;
+    }
+
+    /**
+     * Función para añadir productos al carrito usando COOKIES
+     */
     public function addToCart($productId)
     {
-        $product = Product::findOrFail($productId);
+        $product = Product::find($productId);
 
-        // Añadimos el producto usando la librería Darryldecode Cart
-        \Cart::add([
-            'id' => $product->id,
-            'name' => $product->name,
-            'price' => $product->price,
-            'quantity' => 1,
-            'attributes' => [
-                'image' => $product->image,
-            ]
+        if (!$product) {
+            return;
+        }
+
+        // 1. Usamos tu método exacto del Helper: addCartItem
+        // Esto devuelve el total de productos en el carrito
+        $total_count = CartManagement::addCartItem($product->id, 1);
+
+        // 2. Emitimos el evento que tu Navigation.php ya sabe escuchar
+        $this->dispatch('update-cart-count', total_count: $total_count);
+
+        // 3. Lanzamos el modal con el formato que ya usas en el Detalle
+        $this->dispatch('show-product-modal', [
+            'name'     => $product->name,
+            'image'    => asset('storage/' . $product->image),
+            'price'    => number_format($product->price, 2),
+            'quantity' => 1
         ]);
-
-        // Emitimos un evento para que el contador del carrito en el navbar se actualice
-        $this->dispatch('cartUpdated');
-
-        // Mostramos un mensaje de éxito (puedes usar un simple flash si no tienes LivewireAlert)
-        session()->flash('success', 'Producto añadido al carrito');
     }
 
     public function render()
     {
         return view('livewire.home', [
-            'products' => Product::where('is_active', true)->latest()->get()
+            'banners' => Banner::where('is_active', true)->orderBy('sort_order')->get(),
+            'categories' => Category::all(),
+            'products' => Product::where('is_active', true)
+                ->when($this->selectedCategory, function ($query) {
+                    return $query->where('category_id', $this->selectedCategory);
+                })
+                ->latest()
+                ->take(8)
+                ->get(),
         ]);
     }
 }

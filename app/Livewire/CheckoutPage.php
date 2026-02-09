@@ -3,94 +3,103 @@
 namespace App\Livewire;
 
 use Livewire\Component;
+use App\Helpers\CartManagement;
+use App\Models\City; // Importamos el modelo
 
 class CheckoutPage extends Component
 {
-    public $name, $phone, $email, $address, $city, $notes;
-    public $showPaymentOptions = false; 
-    public $shippingCost = 0;
+    public $name;
+    public $phone;
+    public $email;
+    public $address;
+    public $city; // Aquí guardaremos el nombre de la ciudad seleccionada
+    public $notes;
+    
+    public $cart_items = [];
+    public $subtotal;
+    public $shipping_cost = 0;
+    public $total;
+    public $showPaymentOptions = false;
 
-    public $cities = [
-        'Soritor' => 0,
-        'Moyobamba' => 10,
-        'Rioja' => 15,
-        'Tarapoto' => 20,
-        'Lima' => 45
-    ];
+    // Propiedad para almacenar las ciudades de la BD
+    public $available_cities = [];
 
-    // ESTO CORRIGE EL ERROR: Redirigimos antes de intentar renderizar
     public function mount()
     {
-        if (\Cart::isEmpty()) {
-            return redirect()->to('/');
+        // Cargamos solo las ciudades activas desde la BD
+        $this->available_cities = City::where('is_active', true)->get();
+        
+        $this->cart_items = CartManagement::getCartItemsFromCookie();
+        
+        if (empty($this->cart_items)) {
+            return redirect()->route('cart');
         }
+
+        $this->calculateTotals();
     }
 
-    protected $rules = [
-        'name'    => 'required|min:3|max:50|regex:/^[a-zA-Z\s]+$/',
-        'phone'   => 'required|digits:9',
-        'email'   => 'required|email',
-        'address' => 'required|min:10',
-        'city'    => 'required',
-    ];
-
-    public function updatedCity($value)
+    // Se ejecuta al cambiar la ciudad en el select
+    public function updatedCity($cityName)
     {
-        $this->shippingCost = $this->cities[$value] ?? 50;
+        // Buscamos la ciudad en la BD para obtener su costo de envío
+        $cityData = City::where('name', $cityName)->first();
+        
+        $this->shipping_cost = $cityData ? $cityData->shipping_cost : 0;
+        
+        $this->calculateTotals();
+    }
+
+    public function calculateTotals()
+    {
+        $this->subtotal = array_sum(array_column($this->cart_items, 'total_amount'));
+        $this->total = $this->subtotal + $this->shipping_cost;
     }
 
     public function placeOrder()
     {
-        $this->validate();
-        $this->showPaymentOptions = true; 
-        session()->flash('success', '¡Datos confirmados!');
+        $this->validate([
+            'name' => 'required|min:3',
+            'phone' => 'required|numeric',
+            'email' => 'required|email',
+            'address' => 'required',
+            'city' => 'required',
+        ]);
+
+        $this->showPaymentOptions = true;
     }
 
     public function finalize()
     {
-        $this->validate();
-        $miTelefono = "51969979954";
+        $text = "*NUEVO PEDIDO - IMPORTACIONES SALAZAR*\n";
+        $text .= "--------------------------\n";
+        $text .= "👤 *Cliente:* {$this->name}\n";
+        $text .= "📞 *WhatsApp:* {$this->phone}\n";
+        $text .= "📍 *Ciudad:* {$this->city}\n";
+        $text .= "🏠 *Dirección:* {$this->address}\n";
+        if($this->notes) $text .= "📝 *Notas:* {$this->notes}\n";
+        $text .= "--------------------------\n";
         
-        $cartItems = \Cart::getContent();
-        $totalProductos = \Cart::getTotal();
-        $totalFinal = $totalProductos + $this->shippingCost;
-
-        $listaProductos = "";
-        foreach ($cartItems as $item) {
-            $listaProductos .= "• " . $item->name . " (x" . $item->quantity . ") - $" . number_format($item->getPriceSum(), 2) . "\n";
+        foreach ($this->cart_items as $item) {
+            $text .= "• " . $item['name'] . " (x" . $item['quantity'] . ")\n";
         }
 
-        $texto = "¡Hola! Nuevo pedido en SHOPPRO. 🚀\n\n";
-        $texto .= "*CLIENTE:* " . $this->name . "\n";
-        $texto .= "*CELULAR:* " . $this->phone . "\n";
-        $texto .= "--------------------------\n";
-        $texto .= "*PRODUCTOS:*\n" . $listaProductos . "\n";
-        $texto .= "--------------------------\n";
-        $texto .= "*SUBTOTAL:* $" . number_format($totalProductos, 2) . "\n";
-        $texto .= "*ENVÍO:* $" . number_format($this->shippingCost, 2) . " (" . $this->city . ")\n";
-        $texto .= "*TOTAL A PAGAR:* $" . number_format($totalFinal, 2) . "\n\n";
-        $texto .= "📍 *DIRECCIÓN:* " . $this->address . "\n\n";
-        $texto .= "Adjunto mi comprobante de pago.";
+        $text .= "--------------------------\n";
+        $text .= "*Subtotal:* S/ " . number_format($this->subtotal, 2) . "\n";
+        $text .= "*Envío:* S/ " . number_format($this->shipping_cost, 2) . "\n";
+        $text .= "*TOTAL A PAGAR: S/ " . number_format($this->total, 2) . "*\n\n";
+        $text .= "✅ _Ya realicé el pago, adjunto el comprobante._";
 
-        $urlWhatsapp = "https://wa.me/" . $miTelefono . "?text=" . urlencode($texto);
+        $phone = "51969979954"; 
+        $url = "https://wa.me/" . $phone . "?text=" . urlencode($text);
 
-        // 1. Limpiamos el carrito
-        \Cart::clear();
-
-        // 2. Guardamos una marca de "Compra Exitosa" en la sesión
-        session()->flash('order_completed', '¡Gracias por tu compra! Tu pedido ha sido enviado por WhatsApp.');
-
-        // 3. Redirigimos
-        return redirect()->away($urlWhatsapp);
-
-
+        CartManagement::clearCartItems();
+        session()->flash('order_completed', '¡Gracias por tu compra, ' . $this->name . '!');
+        
+        return redirect()->away($url);
     }
 
     public function render()
     {
-        return view('livewire.checkout-page', [
-            'cartItems' => \Cart::getContent(),
-            'total' => \Cart::getTotal()
-        ]);
+        return view('livewire.checkout-page');
     }
 }
